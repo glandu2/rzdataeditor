@@ -38,6 +38,26 @@ int patternMatch(char *buffer, char *pattern) {
 #define OPT_ACTION_ADD 0x10
 #define OPT_ACTION_RENAME 0x20
 
+void help() {
+	printf("RappelzDataUnpacker - Glandu2 (%s %s)\n"
+		   "List/Extract/Update/Add files in rappelz data.00x archive\n", __DATE__, __TIME__);
+
+	printf("Usage: RappelzDataUnpacker [ --list | --extract | --update | --add | --force-add | --verbose | --data-dir | --output-dir ] [ <pattern> ]\n"
+		   "\n"
+		   "Actions:\n"
+		   "--list       List files that match the pattern\n"
+		   "--extract    Extract files that match the pattern to the output-dir (default to current dir)\n"
+		   "--update     Update the file with the <pattern> file.\n"
+		   "             The file must already exist and the new size must be equal or lower than the existing file in the archive\n"
+		   "--add        Add the <pattern> file into the archive. The file must not already exist\n"
+		   "\n"
+		   "--verbose    More output\n"
+		   "--data-dir   Folder containing the data.000 file\n"
+		   "--output-dir Output directory to use when extracting files (default to current dir)\n"
+		   "<pattern>    Pattern for file to match (when listing or extracting them) or the file to add/update\n"
+		   "             The wildcard character is *\n");
+}
+
 int main(int argc, char *argv[]) {
 	RPZFILERECORD *p;
 	RPZDATAHANDLE dataFile;
@@ -55,10 +75,12 @@ int main(int argc, char *argv[]) {
 
 	int i, flags, result;
 
-
 	flags = 0;
 	for(i=1; i<argc; i++) {
-		if(!strcmp(argv[i], "--list")) {
+		if(!strcmp(argv[i], "--help")) {
+			help();
+			return;
+		} else if(!strcmp(argv[i], "--list")) {
 			flags |= OPT_ACTION_LIST;
 			flags &= ~OPT_ACTION_UPDATE;
 			flags &= ~OPT_ACTION_ADD;
@@ -99,17 +121,19 @@ int main(int argc, char *argv[]) {
 				outputDir = argv[i+1];
 				i++;
 			}
-		} else if(argv[i]) pattern = argv[i];
+		} else if(argv[i]) {
+			pattern = argv[i];
+		}
 	}
 
 	sprintf(data000path, "%s/data.000", inputDir);
 
-	if(flags & OPT_VERBOSE_OUTPUT) fprintf(stderr, "Processing %s ...\n", data000path);
+	if(flags & OPT_VERBOSE_OUTPUT)
+		fprintf(stderr, "Processing %s ...\n", data000path);
 
 	dataFile = openRappelzData(data000path, &result);
-	if(!dataFile) printf( "Cannot open data file, Error %s\n", strerror(result));
-	else puts("File opened");
-
+	if(!dataFile)
+		printf( "Cannot open data file, Error %s\n", strerror(result));
 
 	if(flags & OPT_ACTION_RENAME) {
 		char choice[10];
@@ -120,29 +144,43 @@ int main(int argc, char *argv[]) {
 		} while(strncmp(choice, "yes", 3) != 0 && strncmp(choice, "no", 2) != 0);
 		if(!strncmp(choice, "yes", 3)) {
 			returnCode = renameRappelzFile(dataFile, renameFileName, renameNewFileName);
-			if(returnCode) printf( "Cannot rename file %s, Error %s\n", renameFileName, strerror(returnCode));
-			else saveRappelzData(dataFile, data000path);
-		} else puts("Not renaming");
+			if(returnCode)
+				printf( "Cannot rename file %s, Error %s\n", renameFileName, strerror(returnCode));
+			else
+				saveRappelzData(dataFile, data000path);
+		} else {
+			puts("Not renaming");
+		}
 	} else if(flags & OPT_ACTION_UPDATE || flags & OPT_ACTION_ADD) {
 		int returnCode;
 		chrPtr = strrchr(pattern, '\\');
-		if(!chrPtr) chrPtr = pattern;
-		else chrPtr++;
+		if(!chrPtr)
+			chrPtr = pattern;
+		else
+			chrPtr++;
+
 		if(flags & OPT_ACTION_UPDATE)
 			returnCode = addRappelzFile(dataFile, chrPtr, pattern, AM_UpdateOnly);
-		else returnCode = addRappelzFile(dataFile, chrPtr, pattern, AM_AddOnly);
-		if(returnCode) printf( "Cannot update/add file, Error %s\n", strerror(returnCode));
-		else saveRappelzData(dataFile, data000path);
+		else
+			returnCode = addRappelzFile(dataFile, chrPtr, pattern, AM_AddOnly);
+
+		if(returnCode)
+			printf( "Cannot update/add file, Error %s\n", strerror(returnCode));
+		else
+			saveRappelzData(dataFile, data000path);
 	} else {
-		if(flags & OPT_ACTION_LIST) printf("Filename\tHash\tData Location\tStart offset\tSize\n");
+		if(flags & OPT_ACTION_LIST)
+			printf("Filename\tHash\tData Location\tStart offset\tSize\n");
 		p = dataFile->dataList;
 		while(p) {
 			if(patternMatch(p->filename, pattern)) {
-				if(flags & OPT_ACTION_LIST) printf("%s\t\"%s\"\t%s/data.%03d\t%u\t%u\n", p->filename, p->hash, inputDir, p->dataFileID, p->beginAddress, p->dataSize);
+				if(flags & OPT_ACTION_LIST)
+					printf("%s\t\"%s\"\t%s/data.%03d\t%u\t%u\n", p->filename, p->hash, inputDir, p->dataFileID, p->beginAddress, p->dataSize);
 				if(flags & OPT_ACTION_EXTRACT) {
 					sprintf(fullDataname, "%s/data.%03d", inputDir, p->dataFileID);
 					sprintf(fullFilename, "%s/%s", outputDir, p->filename);
-					if(flags & OPT_VERBOSE_OUTPUT) fprintf(stderr, "Extracting %s ...\n", fullFilename);
+					if(flags & OPT_VERBOSE_OUTPUT)
+						fprintf(stderr, "Extracting %s ...\n", fullFilename);
 					unpackRappelzFile(fullFilename, fullDataname, p->beginAddress, p->dataSize, NULL);
 				}
 			}

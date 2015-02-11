@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include <ctype.h>
 #include <errno.h>
 
@@ -29,8 +28,8 @@ static char decryptTablePhase2[0x80] =
 
 void decryptPhase1(char *hash) {
 	char val1, val2;
-	int medianPt13 = floor(0.33*strlen(hash));
-	int medianPt23 = floor(0.66*strlen(hash));
+	int medianPt13 = (int)(0.33*strlen(hash));
+	int medianPt23 = (int)(0.66*strlen(hash));
 
 	val1 = hash[medianPt23];
 	val2 = hash[medianPt13];
@@ -42,7 +41,7 @@ void decryptPhase1(char *hash) {
 	hash[1] = val2;
 }
 
-inline int decryptLastChar(char c) {
+int decryptLastChar(char c) {
 	return decryptLastCharTable[(unsigned char)c];
 }
 

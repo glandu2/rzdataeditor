@@ -9,7 +9,11 @@
 
 #include "RappelzDataManager.h"
 
+#ifdef WIN32
+#define EXPORT __declspec(dllexport) __stdcall
+#else
 #define EXPORT __export __stdcall
+#endif
 
 typedef struct {
 	RPZDATAHANDLE rappelzData;
@@ -82,9 +86,9 @@ int EXPORT ReadHeader (HANDLE hArcData, tHeaderData *HeaderData) {
 	return 0;
 }
 
-void progressInfoCallback(char *filename, unsigned long processed, unsigned long totalSize) {
+void progressInfoCallback(const char *filename, unsigned long processed, unsigned long totalSize) {
 	if(pProcessDataProc && (totalSize > 100)) {
-		pProcessDataProc(filename, -(processed/(totalSize/100)));
+		pProcessDataProc((char*)filename, -(processed/(totalSize/100)));
 	}
 }
 

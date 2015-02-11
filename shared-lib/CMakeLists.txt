@@ -1,4 +1,3 @@
 file(GLOB IMPL_SRC_LIST "${SHARED_LIB_PATH}/*.c" "${SHARED_LIB_PATH}/*.h")
 
-add_library(${SHARED_LIB_NAME} ${IMPL_SRC_LIST})
-target_link_libraries(${SHARED_LIB_NAME} m)
+add_library(${SHARED_LIB_NAME} STATIC ${IMPL_SRC_LIST})
