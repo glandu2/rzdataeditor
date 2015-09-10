@@ -4,7 +4,7 @@ project(RappelzDataEditor)
 
 #set(CMAKE_VERBOSE_MAKEFILE true)
 set(BUILD_SHARED_LIBS true)
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
 
 #######################################
 

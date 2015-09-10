@@ -9,7 +9,7 @@
 #include "RappelzDataManager.h"
 #include "signature.h"
 
-#define BUFFER_SIZE 16384
+#define BUFFER_SIZE 128*1024
 
 #define debug_printf(format, ...) printf("RappelzDataManager: " format, ## __VA_ARGS__)
 
