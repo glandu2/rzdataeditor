@@ -16,7 +16,7 @@ static char decryptLastCharTable[0x80] =
 	 0x0c, 0x35, 0x3c, 0x4c, 0x06, 0x24, 0x50, 0x36, 0x2f, 0x13, 0x47, 0x17, 0x45, 0x51, 0x26, 0x09,
 	 0x2b, 0x1a, 0x0d, 0x05, 0x41, 0x29, 0x0b, 0x30, 0x08, 0x32, 0x53, 0x07, 0x00, 0x34, 0x1e, 0x00};
 
-static char decryptTablePhase2[0x80] =
+static unsigned char decryptTablePhase2[0x80] =
 	{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	 0x21, 0x64, 0x00, 0x33, 0x37, 0x2d, 0x23, 0x62, 0x5a, 0x47, 0x00, 0x5f, 0x25, 0x36, 0x2c, 0x00,
@@ -46,21 +46,18 @@ int decryptLastChar(char c) {
 }
 
 void decryptPhase2(char *hash, int decodeSeed) {
-	int i, j;
-	char computeVar;
 	int computeLoop = decodeSeed;
 	int hashSize = strlen(hash);
 
-	for(i=0; i < hashSize; i++) {
+	for(int i=0; i < hashSize; i++) {
 		//décodage du caractere
-		computeVar = hash[i];
-		for(j=0; j < computeLoop; j++) {
-			computeVar = decryptTablePhase2[(unsigned char)computeVar];
-			if(!computeVar) computeVar = 0xFF;
-		}
+		unsigned char computeVar = hash[i];
+
+		for(int j=0; j < computeLoop; j++)
+			computeVar = decryptTablePhase2[computeVar];
+
 		hash[i] = computeVar;
-		computeLoop = (1+computeLoop + 17*computeVar)&0x1F;
-		if(!computeLoop) computeLoop = 0x20;
+		computeLoop = (computeLoop + 17*computeVar) % 32 + 1;
 	}
 }
 
@@ -73,7 +70,7 @@ void decryptPhase2(char *hash, int decodeSeed) {
  * \li \c EINVAL hash ou name est NULL.
  * \sa convertNameToHash
  */
-int convertHashToName(char *hash, char *name) {
+int convertHashToName(const char *hash, char *name) {
 	char reducedHash[260];
 	
 	if(!hash || !name) return EINVAL;
@@ -88,29 +85,26 @@ int convertHashToName(char *hash, char *name) {
 	return 0;
 }
 
+static unsigned char local_tolower(unsigned char in) {
+	if (in >= 'A' && in <= 'Z')
+		return in - ('A' - 'a');
+	return in;
+}
+
 /**
  * Récupère le numéro du data.00x ou sont les données du fichier associé au hash.
  * \param hash Le hash du fichier
  * \return Le numéro du fichier de donnée (1 pour data.001, 2 pour data.002 etc ...).
  */
-int getAssociatedDataFileNumber(char *hash) {
-	char buffer[256];
-	char *p = buffer;
+int getAssociatedDataFileNumber(const char *hash) {
 	int checksum=0;
-	
+
 	if(!hash) return 1;
 
-	do {
-		*(p++) = (char)tolower(*hash);
-	}while(*(hash++));
-
-	p = buffer;
-	while(*p) {
-		checksum = checksum*31 + *p;
-		p++;
+	for(int i = 0; hash[i] != '\0'; i++) {
+		checksum = checksum*31 + local_tolower(hash[i]);
 	}
 
 	if(checksum < 0) checksum = -checksum;
 	return (checksum & 0x07)+1;
 }
-

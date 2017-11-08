@@ -31,18 +31,15 @@ void prepareHash(char *hash) {
 }
 
 void encryptNameToHash(char *name, unsigned int encodeSeed) {
-	int i, j;
-	unsigned char computeVar;
-	unsigned int computeLoop = encodeSeed;
+	int computeLoop = encodeSeed;
 
-	for(i=0; name[i]; i++) {
-		computeVar = name[i];
+	for(int i=0; name[i]; i++) {
+		unsigned char computeVar = name[i];
 
-		for(j=0; j < computeLoop; j++)
+		for(int j=0; j < computeLoop; j++)
 			computeVar = encryptTablePhase2[computeVar];
 
-		computeLoop = (1+computeLoop + 17*name[i])&0x1F;
-		if(!computeLoop) computeLoop = 0x20;
+		computeLoop = (computeLoop + 17*name[i]) % 32 + 1;
 		name[i] = computeVar;
 	}
 }
@@ -51,17 +48,15 @@ int computeLegacySeed(const char *name) {
 	int i, computeVar;
 
 	for(i = 0, computeVar = 0; name[i]; i++)
-		computeVar = name[i]*17 + computeVar + 1;
+		computeVar += name[i]*17;
 
-	computeVar = (i + computeVar) & 0x1F;
-	if (!computeVar) return 0x20;
-	else return computeVar;
+	computeVar = (i*2 + computeVar - 1) % 32 + 1;
+	return computeVar;
 }
 
 char computeFirstChar(char *reducedHash) {
 	int i, computeVar;
 
-	//for(i = 0, computeVar = 0; i < strlen(reducedHash); i++)
 	for(i = 0, computeVar = 0; reducedHash[i]; i++)
 		computeVar = reducedHash[i] + computeVar;
 
